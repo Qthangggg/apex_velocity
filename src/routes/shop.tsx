@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
-import { ProductCard } from "@/components/product-card";
-import { Failure, Loading, SetupNotice } from "@/components/shop-feedback";
+import { ProductCard, ProductCardSkeleton } from "@/components/product-card";
+import { Failure, SetupNotice } from "@/components/shop-feedback";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { isConfigured } from "@/lib/supabase";
@@ -92,7 +92,11 @@ function ShopPage() {
               <Failure error={categories.error} retry={() => void categories.refetch()} />
             )}
             {catalog.isLoading ? (
-              <Loading />
+              <div className="grid grid-cols-2 gap-x-4 gap-y-10 lg:grid-cols-4 lg:gap-6">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <ProductCardSkeleton key={i} />
+                ))}
+              </div>
             ) : catalog.error ? (
               <Failure error={catalog.error} retry={() => void catalog.refetch()} />
             ) : (

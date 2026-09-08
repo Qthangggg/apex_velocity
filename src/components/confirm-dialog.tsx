@@ -22,7 +22,7 @@ export interface ConfirmOptions {
   description: string;
   confirmText?: string;
   cancelText?: string;
-  variant?: "default" | "destructive" | "sport";
+  variant?: "default" | "destructive" | "sport" | "outline";
 }
 
 export type ConfirmFn = (options: string | ConfirmOptions) => Promise<boolean>;
@@ -43,7 +43,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     description: string;
     confirmText: string;
     cancelText: string;
-    variant: "default" | "destructive" | "sport";
+    variant: "default" | "destructive" | "sport" | "outline";
   }>({
     open: false,
     title: "Xác nhận thao tác",
@@ -60,7 +60,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     let description = "";
     let confirmText = "Xác nhận";
     let cancelText = "Hủy";
-    let variant: "default" | "destructive" | "sport" = "default";
+    let variant: "default" | "destructive" | "sport" | "outline" = "default";
 
     if (typeof options === "string") {
       description = options;
@@ -68,9 +68,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       const opts = options as ConfirmOptions;
       title = opts.title ?? title;
       description =
-        typeof opts.description === "string"
-          ? opts.description
-          : String(opts.description ?? "");
+        typeof opts.description === "string" ? opts.description : String(opts.description ?? "");
       confirmText = opts.confirmText ?? confirmText;
       cancelText = opts.cancelText ?? cancelText;
       variant = opts.variant ?? variant;
@@ -166,12 +164,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCancel}
-              className="mt-2 sm:mt-0"
-            >
+            <Button type="button" variant="outline" onClick={handleCancel} className="mt-2 sm:mt-0">
               {state.cancelText}
             </Button>
             <Button
@@ -181,7 +174,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                   ? "destructive"
                   : state.variant === "sport"
                     ? "sport"
-                    : "default"
+                    : state.variant === "outline"
+                      ? "outline"
+                      : "default"
               }
               onClick={handleAction}
             >

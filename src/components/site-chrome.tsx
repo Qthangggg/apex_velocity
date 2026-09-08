@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { Menu, Search, ShoppingBag, UserRound, X } from "lucide-react";
+import { Heart, Menu, Search, ShoppingBag, UserRound, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart-context";
+import { useWishlist } from "@/lib/wishlist-context";
 import { useAuth } from "@/lib/auth-context";
 import { requireSupabase, isConfigured } from "@/lib/supabase";
 import { errorMessage } from "@/lib/shop-api";
@@ -10,6 +11,7 @@ import { errorMessage } from "@/lib/shop-api";
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const { totalCount } = useCart();
+  const { count: wishlistCount } = useWishlist();
   const { user, isAdmin } = useAuth();
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
@@ -40,6 +42,26 @@ export function SiteHeader() {
           <Button variant="ghost" size="icon" asChild>
             <Link to="/shop" aria-label="Tìm kiếm" title="Tìm kiếm">
               <Search />
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            asChild
+            className="relative"
+            title="Danh sách yêu thích"
+          >
+            <Link
+              to="/account"
+              search={{ tab: "wishlist" } as never}
+              aria-label={"Yêu thích, " + wishlistCount + " sản phẩm"}
+            >
+              <Heart className={wishlistCount > 0 ? "fill-primary text-primary" : ""} />
+              {wishlistCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                  {wishlistCount > 9 ? "9+" : wishlistCount}
+                </span>
+              )}
             </Link>
           </Button>
           <Button variant="ghost" asChild className="hidden px-2 sm:inline-flex">
@@ -95,6 +117,13 @@ export function SiteHeader() {
                 QUẢN TRỊ
               </Link>
             )}
+            <Link
+              to="/account"
+              search={{ tab: "wishlist" } as never}
+              onClick={() => setOpen(false)}
+            >
+              YÊU THÍCH ({wishlistCount})
+            </Link>
             <Link to="/cart" onClick={() => setOpen(false)}>
               GIỎ HÀNG ({totalCount})
             </Link>

@@ -11,8 +11,8 @@ import socksImage from "@/assets/elite-socks.jpg";
 import heroImage from "@/assets/apex-hero.jpg";
 import { useCatalog } from "@/lib/shop-api";
 import { isConfigured } from "@/lib/supabase";
-import { ProductCard } from "@/components/product-card";
-import { Failure, Loading, SetupNotice } from "@/components/shop-feedback";
+import { ProductCard, ProductCardSkeleton } from "@/components/product-card";
+import { Failure, SetupNotice } from "@/components/shop-feedback";
 import strengthImage from "@/assets/strength-gear.jpg";
 import tracksuitImage from "@/assets/velocity-tracksuit.jpg";
 
@@ -43,7 +43,7 @@ const categories = [
 ];
 
 function HomePage() {
-  const catalog = useCatalog();
+  const catalog = useCatalog({ limit: 4 });
   return (
     <div className="bg-background">
       <SiteHeader />
@@ -119,7 +119,11 @@ function HomePage() {
               <SetupNotice />
             </div>
           ) : catalog.isLoading ? (
-            <Loading />
+            <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-10 lg:grid-cols-4 lg:gap-6">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <ProductCardSkeleton key={i} />
+              ))}
+            </div>
           ) : catalog.error ? (
             <Failure error={catalog.error} retry={() => void catalog.refetch()} />
           ) : (

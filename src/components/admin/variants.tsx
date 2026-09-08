@@ -111,7 +111,8 @@ export function VariantEditor({ productId }: { productId: string }) {
             if (
               await confirm({
                 title: "Tải lại tồn kho",
-                description: "Tải lại tồn kho từ máy chủ? Các sửa đổi biến thể chưa lưu sẽ bị bỏ qua.",
+                description:
+                  "Tải lại tồn kho từ máy chủ? Các sửa đổi biến thể chưa lưu sẽ bị bỏ qua.",
                 confirmText: "Tải lại",
                 cancelText: "Hủy",
                 variant: "outline",

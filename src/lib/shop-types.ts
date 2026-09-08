@@ -105,3 +105,27 @@ export type CheckoutInput = {
   p_request_id: string;
   p_expected_total: number;
 };
+
+export type WishlistItem = {
+  id: string;
+  user_id: string;
+  product_id: string;
+  created_at: string;
+  products?: ShopProduct;
+};
+
+export type ProductReview = {
+  id: string;
+  product_id: string;
+  user_id: string;
+  rating: number;
+  title: string;
+  comment: string;
+  is_verified_purchase: boolean;
+  is_approved: boolean;
+  created_at: string;
+  updated_at: string;
+  profiles?: {
+    full_name: string;
+  } | null;
+};

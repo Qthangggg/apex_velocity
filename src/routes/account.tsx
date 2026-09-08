@@ -7,13 +7,21 @@ import { AddressFields, type AddressValue } from "@/components/address-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Heart } from "lucide-react";
+import { ProductCard } from "@/components/product-card";
 import { useAuth } from "@/lib/auth-context";
 import { formatPrice } from "@/lib/cart-context";
+import { useWishlist } from "@/lib/wishlist-context";
 import { emptyAddress, getAddresses, getOrders, orderLabels } from "@/lib/shop-api";
 import { useConfirm } from "@/components/confirm-dialog";
 import { requireSupabase } from "@/lib/supabase";
 import type { Address, Order } from "@/lib/shop-types";
+
 export const Route = createFileRoute("/account")({
+  validateSearch: (search: Record<string, unknown>): { tab?: string } => {
+    const tab = search["tab"];
+    return typeof tab === "string" ? { tab } : {};
+  },
   head: () => ({ meta: [{ title: "Tài khoản của tôi — Apex Velocity" }] }),
   component: AccountPage,
 });
@@ -33,7 +41,8 @@ function AccountPage() {
 }
 function AccountContent() {
   const { user, profile, isAdmin, signOut, refreshProfile } = useAuth();
-  const [tab, setTab] = useState("orders");
+  const search = Route.useSearch();
+  const [tab, setTab] = useState(search?.tab || "orders");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState<unknown>(null);
@@ -91,6 +100,7 @@ function AccountContent() {
       <div className="mb-8 flex flex-wrap gap-3">
         {[
           { id: "orders", name: "Đơn hàng" },
+          { id: "wishlist", name: "Yêu thích" },
           { id: "profile", name: "Hồ sơ" },
           { id: "addresses", name: "Sổ địa chỉ" },
         ].map((item) => (
@@ -114,6 +124,7 @@ function AccountContent() {
         </p>
       )}
       {tab === "orders" && <OrdersPanel />}
+      {tab === "wishlist" && <WishlistPanel />}
       {tab === "addresses" && <AddressesPanel />}
       {tab === "profile" && (
         <form onSubmit={saveProfile} className="max-w-xl space-y-5" key={profile!.id}>
@@ -150,6 +161,42 @@ function AccountContent() {
         </form>
       )}
     </>
+  );
+}
+
+function WishlistPanel() {
+  const { wishlistItems, count } = useWishlist();
+
+  if (count === 0) {
+    return (
+      <div className="border border-dashed border-border py-16 text-center">
+        <Heart size={40} className="mx-auto mb-3 text-muted-foreground" />
+        <h3 className="font-display text-xl font-bold uppercase italic">
+          Danh sách yêu thích trống
+        </h3>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Hãy lưu các trang phục hoặc giày bạn yêu thích để dễ dàng mua sắm sau này.
+        </p>
+        <Button variant="sport" className="mt-6" asChild>
+          <Link to="/shop">Khám phá bộ sưu tập</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="font-display text-xl font-bold uppercase italic">
+          Sản phẩm đã lưu ({count})
+        </h2>
+      </div>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
+        {wishlistItems.map((item) =>
+          item.products ? <ProductCard key={item.product_id} product={item.products} /> : null,
+        )}
+      </div>
+    </div>
   );
 }
 function AddressesPanel() {

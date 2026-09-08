@@ -1,6 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { requireSupabase, isConfigured } from "./supabase";
-import type { Address, Category, CheckoutInput, Order, ShopProduct } from "./shop-types";
+import type {
+  Address,
+  Category,
+  CheckoutInput,
+  Order,
+  ProductReview,
+  ShopProduct,
+  WishlistItem,
+} from "./shop-types";
 
 export function errorMessage(error: unknown): string {
   const code =
@@ -38,6 +46,7 @@ export function useCategories() {
   return useQuery({
     queryKey: ["categories"],
     enabled: isConfigured,
+    staleTime: 1000 * 60 * 10,
     queryFn: async () => {
       const { data, error } = await requireSupabase()
         .from("categories")
@@ -56,16 +65,19 @@ export function useCatalog(
     category?: string;
     sort?: string;
     page?: number;
+    limit?: number;
     featured?: boolean;
   } = {},
 ) {
   return useQuery({
     queryKey: ["catalog", options],
     enabled: isConfigured,
+    staleTime: 1000 * 60 * 5,
     queryFn: async () => {
+      const needCount = options.page !== undefined || !options.limit;
       let query = requireSupabase()
         .from("products")
-        .select("*,categories(*),product_variants(*)", { count: "exact" })
+        .select("*,categories(*),product_variants(*)", needCount ? { count: "exact" } : undefined)
         .eq("is_active", true);
       if (options.search)
         query = query.ilike(
@@ -80,8 +92,9 @@ export function useCatalog(
           : options.sort === "price-desc"
             ? query.order("price", { ascending: false })
             : query.order("created_at", { ascending: false });
-      const offset = (options.page ?? 0) * 12;
-      const { data, error, count } = await query.order("id").range(offset, offset + 11);
+      const pageSize = options.limit ?? 12;
+      const offset = (options.page ?? 0) * pageSize;
+      const { data, error, count } = await query.order("id").range(offset, offset + pageSize - 1);
       if (error) throw error;
       return { products: data as ShopProduct[], count: count ?? 0 };
     },
@@ -91,7 +104,8 @@ export function useCatalog(
 export function useProduct(slug: string) {
   return useQuery({
     queryKey: ["product", slug],
-    enabled: isConfigured,
+    enabled: isConfigured && Boolean(slug),
+    staleTime: 1000 * 60 * 5,
     queryFn: async () => {
       const { data, error } = await requireSupabase()
         .from("products")
@@ -147,3 +161,63 @@ export const emptyAddress = {
   district: "",
   city: "",
 };
+
+export function useProductReviews(productId: string) {
+  return useQuery({
+    queryKey: ["product-reviews", productId],
+    enabled: Boolean(isConfigured && productId),
+    staleTime: 1000 * 60 * 2,
+    queryFn: async () => {
+      const { data, error } = await requireSupabase()
+        .from("product_reviews")
+        .select("*,profiles(full_name)")
+        .eq("product_id", productId)
+        .eq("is_approved", true)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as ProductReview[];
+    },
+  });
+}
+
+export async function submitProductReview(input: {
+  productId: string;
+  rating: number;
+  title: string;
+  comment: string;
+}) {
+  const { data, error } = await requireSupabase().rpc("submit_product_review", {
+    p_product_id: input.productId,
+    p_rating: input.rating,
+    p_title: input.title,
+    p_comment: input.comment,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function getWishlist(userId: string) {
+  const { data, error } = await requireSupabase()
+    .from("wishlists")
+    .select("*,products(*,categories(*),product_variants(*))")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as WishlistItem[];
+}
+
+export async function addToWishlist(userId: string, productId: string) {
+  const { error } = await requireSupabase()
+    .from("wishlists")
+    .insert({ user_id: userId, product_id: productId });
+  if (error && !error.message?.includes("duplicate")) throw error;
+}
+
+export async function removeFromWishlist(userId: string, productId: string) {
+  const { error } = await requireSupabase()
+    .from("wishlists")
+    .delete()
+    .eq("user_id", userId)
+    .eq("product_id", productId);
+  if (error) throw error;
+}

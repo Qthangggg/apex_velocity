@@ -33,18 +33,22 @@ type AdminTab = (typeof tabs)[number][0];
 
 function AdminPage() {
   const { user, profile, loading, isAdmin, error, refreshProfile } = useAuth();
-  const [verifiedUserId, setVerifiedUserId] = useState<string | null>(null);
   const currentUserId = user?.id ?? null;
+  const [verifiedUserId, setVerifiedUserId] = useState<string | null>(() =>
+    isAdmin && user ? user.id : null,
+  );
+
   useEffect(() => {
     if (!currentUserId) return;
+    if (isAdmin && verifiedUserId === currentUserId) return;
     let mounted = true;
-    void refreshProfile().finally(() => {
+    void refreshProfile(undefined, false).finally(() => {
       if (mounted) setVerifiedUserId(currentUserId);
     });
     return () => {
       mounted = false;
     };
-  }, [currentUserId, refreshProfile]);
+  }, [currentUserId, isAdmin, refreshProfile, verifiedUserId]);
   let message = "";
   if (!supabase)
     message =
@@ -118,7 +122,10 @@ function AdminWorkspace() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <p className="max-w-sm break-words text-sm text-muted-foreground">
-            Xin chào, <span className="font-semibold text-foreground">{profile?.full_name || "quản trị viên"}</span>
+            Xin chào,{" "}
+            <span className="font-semibold text-foreground">
+              {profile?.full_name || "quản trị viên"}
+            </span>
           </p>
           <Button
             type="button"
@@ -166,7 +173,8 @@ function AdminWorkspace() {
                   tab === "customers") &&
                 !(await confirm({
                   title: "Chuyển mục",
-                  description: "Những thay đổi chưa bấm lưu sẽ bị bỏ qua. Bạn có chắc muốn chuyển mục?",
+                  description:
+                    "Những thay đổi chưa bấm lưu sẽ bị bỏ qua. Bạn có chắc muốn chuyển mục?",
                   confirmText: "Chuyển mục",
                   cancelText: "Ở lại",
                 }))

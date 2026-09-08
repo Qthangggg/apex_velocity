@@ -1,17 +1,63 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Check, ShoppingBag, Truck } from "lucide-react";
+import { Check, Heart, ShoppingBag, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
-import { Failure, Loading, SetupNotice } from "@/components/shop-feedback";
+import { Failure, SetupNotice } from "@/components/shop-feedback";
+import { ProductReviewsSection } from "@/components/product-reviews";
 import { useProduct } from "@/lib/shop-api";
 import { isConfigured } from "@/lib/supabase";
 import { formatPrice, useCart } from "@/lib/cart-context";
+import { useWishlist } from "@/lib/wishlist-context";
 import type { ShopProduct } from "@/lib/shop-types";
+
 export const Route = createFileRoute("/product/$slug")({
   head: () => ({ meta: [{ title: "Chi tiết sản phẩm — Apex Velocity" }] }),
   component: ProductPage,
 });
+
+function ProductDetailSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div className="mb-8 flex flex-wrap gap-2 text-xs">
+        <div className="h-4 w-16 rounded bg-muted/60" />
+        <div className="h-4 w-3 rounded bg-muted/60" />
+        <div className="h-4 w-20 rounded bg-muted/60" />
+        <div className="h-4 w-3 rounded bg-muted/60" />
+        <div className="h-4 w-28 rounded bg-muted/60" />
+      </div>
+      <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+        <div>
+          <div className="aspect-square rounded bg-muted/60" />
+          <div className="mt-4 flex flex-wrap gap-3">
+            <div className="h-16 w-16 rounded bg-muted/60" />
+            <div className="h-16 w-16 rounded bg-muted/60" />
+            <div className="h-16 w-16 rounded bg-muted/60" />
+          </div>
+        </div>
+        <div className="space-y-4">
+          <div className="h-3 w-28 rounded bg-muted/60" />
+          <div className="h-8 w-3/4 rounded bg-muted/60" />
+          <div className="h-6 w-32 rounded bg-muted/60" />
+          <div className="my-6 h-px bg-border" />
+          <div className="space-y-2">
+            <div className="h-4 w-24 rounded bg-muted/60" />
+            <div className="flex gap-2">
+              <div className="h-10 w-24 rounded bg-muted/60" />
+              <div className="h-10 w-24 rounded bg-muted/60" />
+              <div className="h-10 w-24 rounded bg-muted/60" />
+            </div>
+          </div>
+          <div className="mt-8 flex gap-4 pt-4">
+            <div className="h-12 flex-1 rounded bg-muted/60" />
+            <div className="h-12 flex-1 rounded bg-muted/60" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProductPage() {
   const { slug } = Route.useParams();
   const product = useProduct(slug);
@@ -22,7 +68,7 @@ function ProductPage() {
         {!isConfigured ? (
           <SetupNotice />
         ) : product.isLoading ? (
-          <Loading />
+          <ProductDetailSkeleton />
         ) : product.error ? (
           <Failure error={product.error} retry={() => void product.refetch()} />
         ) : product.data ? (
@@ -41,6 +87,8 @@ function ProductPage() {
   );
 }
 function ProductDetail({ product }: { product: ShopProduct }) {
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const wishlisted = isInWishlist(product.id);
   const variants = product.product_variants.filter((variant) => variant.is_active);
   const [variantId, setVariantId] = useState(
     variants.find((variant) => variant.stock > 0)?.id || variants[0]?.id || "",
@@ -171,6 +219,16 @@ function ProductDetail({ product }: { product: ShopProduct }) {
             <Button variant="outline" size="xl" disabled={!canAdd} onClick={() => add(true)}>
               MUA NGAY
             </Button>
+            <Button
+              variant="outline"
+              size="xl"
+              onClick={() => void toggleWishlist(product)}
+              className={wishlisted ? "border-primary text-primary" : ""}
+              title={wishlisted ? "Đã thêm vào yêu thích" : "Lưu vào yêu thích"}
+            >
+              <Heart className={wishlisted ? "fill-primary text-primary" : ""} size={18} />
+              {wishlisted ? "ĐÃ THÍCH" : "YÊU THÍCH"}
+            </Button>
           </div>
           {!canAdd && isReady && (
             <p className="mt-3 text-sm text-muted-foreground">
@@ -206,6 +264,8 @@ function ProductDetail({ product }: { product: ShopProduct }) {
           </div>
         </div>
       </div>
+
+      <ProductReviewsSection product={product} />
     </>
   );
 }

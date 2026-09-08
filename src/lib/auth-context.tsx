@@ -19,7 +19,7 @@ type AuthState = {
   isAdmin: boolean;
   error: string;
   signOut: () => Promise<void>;
-  refreshProfile: (overrideUser?: User | null) => Promise<void>;
+  refreshProfile: (overrideUser?: User | null, blockWhileLoading?: boolean) => Promise<void>;
 };
 const AuthContext = createContext<AuthState | null>(null);
 
@@ -32,14 +32,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const revision = useRef(0);
   const userId = useRef<string | null>(null);
   const profileSnapshot = useRef<Profile | null>(null);
+  const initialAuthDone = useRef(false);
+
+  const clearUserQueries = useCallback(() => {
+    queryClient.removeQueries({ queryKey: ["orders"] });
+    queryClient.removeQueries({ queryKey: ["addresses"] });
+    queryClient.removeQueries({ queryKey: ["admin"] });
+    queryClient.removeQueries({ queryKey: ["profile"] });
+    queryClient.removeQueries({ queryKey: ["wishlist"] });
+    queryClient.removeQueries({ queryKey: ["user-review"] });
+  }, [queryClient]);
 
   const loadProfile = useCallback(
     async (nextUser: User | null, blockWhileLoading = false) => {
       const current = ++revision.current;
       const nextUserId = nextUser?.id ?? null;
-      const changedUser = userId.current !== nextUserId;
+      const isInitial = !initialAuthDone.current;
+      initialAuthDone.current = true;
+
+      const changedUser = !isInitial && userId.current !== nextUserId;
       if (changedUser) {
-        queryClient.clear();
+        clearUserQueries();
         profileSnapshot.current = null;
       }
       userId.current = nextUserId;
@@ -64,22 +77,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (
           previous &&
           (previous.role !== nextProfile.role || previous.is_active !== nextProfile.is_active)
-        )
-          queryClient.clear();
+        ) {
+          queryClient.removeQueries({ queryKey: ["admin"] });
+          queryClient.removeQueries({ queryKey: ["profile"] });
+        }
         profileSnapshot.current = nextProfile;
         setProfile(nextProfile);
       } catch {
         if (current === revision.current) {
           profileSnapshot.current = null;
           setProfile(null);
-          queryClient.clear();
+          clearUserQueries();
           setError("Không tải được hồ sơ hoặc quyền tài khoản. Vui lòng thử lại.");
         }
       } finally {
         if (current === revision.current) setLoading(false);
       }
     },
-    [queryClient],
+    [clearUserQueries, queryClient],
   );
 
   useEffect(() => {
@@ -97,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (failure) {
         profileSnapshot.current = null;
         setProfile(null);
-        queryClient.clear();
+        clearUserQueries();
         setError("Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.");
         setLoading(false);
       } else void loadProfile(data.session?.user ?? null);
@@ -107,29 +122,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       revision.current += 1;
       subscription.unsubscribe();
     };
-  }, [loadProfile, queryClient]);
+  }, [clearUserQueries, loadProfile]);
 
   const refreshProfile = useCallback(
-    async (overrideUser?: User | null) => {
+    async (overrideUser?: User | null, blockWhileLoading = false) => {
       if (!supabase) return;
       let targetUser = overrideUser;
       if (targetUser === undefined) {
         const { data } = await supabase.auth.getSession();
         targetUser = data.session?.user ?? null;
       }
-      await loadProfile(targetUser, true);
+      await loadProfile(targetUser, blockWhileLoading);
     },
     [loadProfile],
   );
 
   useEffect(() => {
     if (!supabase || !user) return;
+    let lastRefreshed = Date.now();
     const refreshIfVisible = () => {
-      if (document.visibilityState === "visible") void refreshProfile();
+      if (document.visibilityState === "visible" && Date.now() - lastRefreshed > 60_000) {
+        lastRefreshed = Date.now();
+        void refreshProfile(undefined, false);
+      }
     };
     window.addEventListener("focus", refreshIfVisible);
     document.addEventListener("visibilitychange", refreshIfVisible);
-    const interval = window.setInterval(refreshIfVisible, 60_000);
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        lastRefreshed = Date.now();
+        void refreshProfile(undefined, false);
+      }
+    }, 60_000);
     return () => {
       window.removeEventListener("focus", refreshIfVisible);
       document.removeEventListener("visibilitychange", refreshIfVisible);
@@ -141,8 +165,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return;
     const { error: failure } = await supabase.auth.signOut();
     if (failure) throw failure;
+    clearUserQueries();
     await loadProfile(null);
-  }, [loadProfile]);
+  }, [clearUserQueries, loadProfile]);
 
   return (
     <AuthContext.Provider

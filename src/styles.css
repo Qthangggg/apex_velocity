@@ -100,7 +100,12 @@
   --hero-muted: oklch(0.8 0.008 50);
   --auth: oklch(0.97 0.003 90);
   --product: oklch(0.97 0.008 90);
-  --hero-overlay: linear-gradient(90deg, oklch(0.05 0 0 / 0.95) 0%, oklch(0.05 0 0 / 0.62) 43%, transparent 74%);
+  --hero-overlay: linear-gradient(
+    90deg,
+    oklch(0.05 0 0 / 0.95) 0%,
+    oklch(0.05 0 0 / 0.62) 43%,
+    transparent 74%
+  );
   --card-overlay: linear-gradient(0deg, oklch(0.04 0 0 / 0.82) 0%, transparent 58%);
   --feature-overlay: linear-gradient(0deg, oklch(0.03 0 0 / 0.84) 0%, transparent 55%);
   --shadow-auth: 0 2px 8px oklch(0.2 0 0 / 0.1);
@@ -167,10 +172,18 @@
   }
 }
 
-@utility bg-hero-overlay { background: var(--hero-overlay); }
-@utility bg-card-overlay { background: var(--card-overlay); }
-@utility bg-feature-overlay { background: var(--feature-overlay); }
-@utility shadow-auth { box-shadow: var(--shadow-auth); }
+@utility bg-hero-overlay {
+  background: var(--hero-overlay);
+}
+@utility bg-card-overlay {
+  background: var(--card-overlay);
+}
+@utility bg-feature-overlay {
+  background: var(--feature-overlay);
+}
+@utility shadow-auth {
+  box-shadow: var(--shadow-auth);
+}
 
 @utility nav-link {
   position: relative;
@@ -179,14 +192,39 @@
   font-weight: 600;
   letter-spacing: 0.12em;
   color: var(--muted-foreground);
-  &::after { content: ""; position: absolute; inset-inline: 0; bottom: 0.9rem; height: 2px; transform: scaleX(0); background: var(--primary); transition: transform 180ms ease; }
-  &:hover, &[data-status="active"] { color: var(--foreground); }
-  &:hover::after, &[data-status="active"]::after { transform: scaleX(1); }
+  &::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0.9rem;
+    height: 2px;
+    transform: scaleX(0);
+    background: var(--primary);
+    transition: transform 180ms ease;
+  }
+  &:hover,
+  &[data-status="active"] {
+    color: var(--foreground);
+  }
+  &:hover::after,
+  &[data-status="active"]::after {
+    transform: scaleX(1);
+  }
 }
 
-html { scroll-behavior: smooth; }
-button, a { transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease; }
+html {
+  scroll-behavior: smooth;
+}
+button,
+a {
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
 
 @media (max-width: 640px) {
-  :root { --hero-overlay: linear-gradient(90deg, oklch(0.04 0 0 / 0.88), oklch(0.04 0 0 / 0.45)); }
+  :root {
+    --hero-overlay: linear-gradient(90deg, oklch(0.04 0 0 / 0.88), oklch(0.04 0 0 / 0.45));
+  }
 }
