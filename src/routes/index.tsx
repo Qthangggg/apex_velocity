@@ -75,7 +75,7 @@ function HomePage() {
                   <span className="absolute left-3 top-3 bg-primary px-3 py-1.5 text-[11px] font-bold tracking-[0.15em] text-primary-foreground">MỚI</span>
                 </div>
                 <h3 className="mt-4 font-semibold">{product.name}</h3><p className="mt-1 text-sm text-muted-foreground">{product.price}</p>
-              </article>
+              </Link>
             ))}
           </div>
         </section>
