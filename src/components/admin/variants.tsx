@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useIsMutating, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/confirm-dialog";
 import { requireSupabase } from "@/lib/supabase";
 import type { Variant } from "@/lib/shop-types";
 import {
@@ -17,6 +18,7 @@ import {
 import { readNumber, requiredText, useAdminIdentity, useAdminMutation } from "./admin-data";
 
 export function VariantEditor({ productId }: { productId: string }) {
+  const confirm = useConfirm();
   const identity = useAdminIdentity();
   const mutations = useIsMutating();
   const [page, setPage] = useState(0);
@@ -105,11 +107,15 @@ export function VariantEditor({ productId }: { productId: string }) {
         <Button
           variant="outline"
           disabled={busy}
-          onClick={() => {
+          onClick={async () => {
             if (
-              window.confirm(
-                "Tải lại tồn kho từ máy chủ? Các sửa đổi biến thể chưa lưu sẽ bị bỏ qua.",
-              )
+              await confirm({
+                title: "Tải lại tồn kho",
+                description: "Tải lại tồn kho từ máy chủ? Các sửa đổi biến thể chưa lưu sẽ bị bỏ qua.",
+                confirmText: "Tải lại",
+                cancelText: "Hủy",
+                variant: "outline",
+              })
             ) {
               setRefreshVersion((value) => value + 1);
               setNewVersion((value) => value + 1);
@@ -141,13 +147,15 @@ export function VariantEditor({ productId }: { productId: string }) {
                   remove.reset();
                   save.mutate({ form, variant });
                 }}
-                onRemove={() => {
+                onRemove={async () => {
                   if (
-                    window.confirm(
-                      "Xóa biến thể " +
-                        variant.sku +
-                        "? Nếu có lịch sử đơn hàng, hãy ẩn biến thể thay vì xóa.",
-                    )
+                    await confirm({
+                      title: "Xóa biến thể",
+                      description: `Xóa biến thể ${variant.sku}? Nếu có lịch sử đơn hàng, hãy ẩn biến thể thay vì xóa.`,
+                      confirmText: "Xóa biến thể",
+                      cancelText: "Hủy",
+                      variant: "destructive",
+                    })
                   ) {
                     setNotice("");
                     save.reset();
@@ -161,9 +169,17 @@ export function VariantEditor({ productId }: { productId: string }) {
             page={page}
             total={query.data.total}
             busy={busy || query.isFetching}
-            onChange={(next) => {
-              if (window.confirm("Chuyển trang biến thể? Các thay đổi chưa lưu sẽ bị bỏ qua."))
+            onChange={async (next) => {
+              if (
+                await confirm({
+                  title: "Chuyển trang",
+                  description: "Chuyển trang biến thể? Các thay đổi chưa lưu sẽ bị bỏ qua.",
+                  confirmText: "Chuyển trang",
+                  cancelText: "Ở lại",
+                })
+              ) {
                 setPage(next);
+              }
             }}
           />
         </>

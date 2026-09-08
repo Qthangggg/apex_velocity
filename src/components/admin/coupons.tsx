@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/confirm-dialog";
 import { requireSupabase } from "@/lib/supabase";
 import { formatPrice } from "@/lib/cart-context";
 import type { Coupon } from "@/lib/shop-types";
@@ -27,6 +28,7 @@ import {
 } from "./admin-data";
 
 export function AdminCoupons() {
+  const confirm = useConfirm();
   const identity = useAdminIdentity();
   const [page, setPage] = useState(0);
   const [editor, setEditor] = useState<Coupon | "new" | null>(null);
@@ -149,8 +151,16 @@ export function AdminCoupons() {
             setNotice("");
             save.mutate(form);
           }}
-          onClose={() => {
-            if (window.confirm("Bỏ các thay đổi mã giảm giá chưa lưu?")) {
+          onClose={async () => {
+            if (
+              await confirm({
+                title: "Bỏ thay đổi",
+                description: "Bỏ các thay đổi mã giảm giá chưa lưu?",
+                confirmText: "Bỏ thay đổi",
+                cancelText: "Tiếp tục sửa",
+                variant: "destructive",
+              })
+            ) {
               setEditor(null);
               save.reset();
             }
@@ -219,13 +229,15 @@ export function AdminCoupons() {
                         variant="destructive"
                         size="sm"
                         disabled={busy || !!editor}
-                        onClick={() => {
+                        onClick={async () => {
                           if (
-                            window.confirm(
-                              "Xóa mã " +
-                                coupon.code +
-                                "? Nên tắt Hoạt động nếu muốn giữ số liệu sử dụng.",
-                            )
+                            await confirm({
+                              title: "Xóa mã giảm giá",
+                              description: `Xóa mã ${coupon.code}? Nên tắt Hoạt động nếu muốn giữ số liệu sử dụng.`,
+                              confirmText: "Xóa mã",
+                              cancelText: "Hủy",
+                              variant: "destructive",
+                            })
                           ) {
                             save.reset();
                             setNotice("");

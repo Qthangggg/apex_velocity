@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/confirm-dialog";
 import { requireSupabase } from "@/lib/supabase";
 import type { Profile, Role, Subscription } from "@/lib/shop-types";
 import {
@@ -20,6 +21,7 @@ import {
 import { dateLabel, useAdminIdentity, useAdminMutation } from "./admin-data";
 
 export function AdminCustomers() {
+  const confirm = useConfirm();
   const identity = useAdminIdentity();
   const [page, setPage] = useState(0);
   const [filter, setFilter] = useState("all");
@@ -90,14 +92,16 @@ export function AdminCustomers() {
         <form
           key={editor.id}
           className={panelClass + " space-y-5"}
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault();
             const form = new FormData(event.currentTarget);
             const role = String(form.get("role")) as Role;
             const active = form.get("is_active") === "on";
             if (
-              window.confirm(
-                "Cập nhật tài khoản “" +
+              await confirm({
+                title: "Cập nhật tài khoản",
+                description:
+                  "Cập nhật tài khoản “" +
                   (editor.full_name || editor.id) +
                   "” thành " +
                   (role === "admin" ? "Quản trị viên" : "Khách hàng") +
@@ -107,7 +111,10 @@ export function AdminCustomers() {
                   (role === "admin" && editor.role !== "admin"
                     ? " Quyền quản trị cho phép quản lý toàn bộ cửa hàng và dữ liệu khách hàng."
                     : ""),
-              )
+                confirmText: "Cập nhật",
+                cancelText: "Hủy",
+                variant: role === "admin" ? "destructive" : "sport",
+              })
             ) {
               setNotice("");
               update.mutate({ profile: editor, role, active });
@@ -136,8 +143,16 @@ export function AdminCustomers() {
               <Button
                 variant="outline"
                 type="button"
-                onClick={() => {
-                  if (window.confirm("Bỏ các thay đổi tài khoản chưa lưu?")) {
+                onClick={async () => {
+                  if (
+                    await confirm({
+                      title: "Bỏ thay đổi",
+                      description: "Bỏ các thay đổi tài khoản chưa lưu?",
+                      confirmText: "Bỏ thay đổi",
+                      cancelText: "Tiếp tục sửa",
+                      variant: "destructive",
+                    })
+                  ) {
                     setEditor(null);
                     update.reset();
                   }
@@ -225,6 +240,7 @@ export function AdminCustomers() {
 }
 
 export function AdminNewsletters() {
+  const confirm = useConfirm();
   const identity = useAdminIdentity();
   const [page, setPage] = useState(0);
   const [notice, setNotice] = useState("");
@@ -280,13 +296,15 @@ export function AdminNewsletters() {
                       variant="destructive"
                       size="sm"
                       disabled={remove.isPending}
-                      onClick={() => {
+                      onClick={async () => {
                         if (
-                          window.confirm(
-                            "Xóa đăng ký nhận bản tin của " +
-                              subscription.email +
-                              "? Thao tác không thể hoàn tác.",
-                          )
+                          await confirm({
+                            title: "Xóa đăng ký bản tin",
+                            description: `Xóa đăng ký nhận bản tin của ${subscription.email}? Thao tác không thể hoàn tác.`,
+                            confirmText: "Xóa đăng ký",
+                            cancelText: "Hủy",
+                            variant: "destructive",
+                          })
                         ) {
                           setNotice("");
                           remove.mutate(subscription);

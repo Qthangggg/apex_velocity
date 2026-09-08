@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth-context";
 import { formatPrice } from "@/lib/cart-context";
 import { emptyAddress, getAddresses, getOrders, orderLabels } from "@/lib/shop-api";
+import { useConfirm } from "@/components/confirm-dialog";
 import { requireSupabase } from "@/lib/supabase";
 import type { Address, Order } from "@/lib/shop-types";
 export const Route = createFileRoute("/account")({
@@ -164,6 +165,7 @@ function AddressesPanel() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [message, setMessage] = useState("");
+  const confirm = useConfirm();
   function edit(address?: Address) {
     setEditing(address?.id ?? null);
     setValue(
@@ -215,7 +217,15 @@ function AddressesPanel() {
     }
   }
   async function remove(id: string) {
-    if (!window.confirm("Xóa địa chỉ này?")) return;
+    if (
+      !(await confirm({
+        title: "Xóa địa chỉ",
+        description: "Bạn có chắc muốn xóa địa chỉ giao hàng này?",
+        confirmText: "Xóa địa chỉ",
+        variant: "destructive",
+      }))
+    )
+      return;
     setBusy(true);
     setError(null);
     try {
@@ -309,8 +319,17 @@ function OrdersPanel() {
   });
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
+  const confirm = useConfirm();
   async function cancel(order: Order) {
-    if (!window.confirm("Hủy đơn hàng đang chờ xác nhận này?")) return;
+    if (
+      !(await confirm({
+        title: "Hủy đơn hàng",
+        description: "Bạn có chắc muốn hủy đơn hàng đang chờ xác nhận này?",
+        confirmText: "Hủy đơn hàng",
+        variant: "destructive",
+      }))
+    )
+      return;
     setBusy(order.id);
     setError(null);
     try {

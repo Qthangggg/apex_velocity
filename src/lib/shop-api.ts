@@ -3,6 +3,10 @@ import { requireSupabase, isConfigured } from "./supabase";
 import type { Address, Category, CheckoutInput, Order, ShopProduct } from "./shop-types";
 
 export function errorMessage(error: unknown): string {
+  const code =
+    typeof error === "object" && error && "code" in error
+      ? String((error as { code?: unknown }).code)
+      : "";
   const message =
     error instanceof Error
       ? error.message
@@ -13,8 +17,20 @@ export function errorMessage(error: unknown): string {
     return "Không thể kết nối máy chủ. Kiểm tra kết nối mạng và thử lại.";
   if (/invalid login credentials/i.test(message)) return "Email hoặc mật khẩu không đúng.";
   if (/email not confirmed/i.test(message)) return "Vui lòng xác nhận email trước khi đăng nhập.";
+  if (/over_email_send_rate_limit/i.test(code) || /email rate limit/i.test(message))
+    return "Hệ thống đã vượt quá giới hạn gửi email của Supabase (Email rate limit exceeded). Vui lòng cấu hình Custom SMTP hoặc tắt 'Confirm email' trong bảng điều khiển Supabase.";
+  if (/user already registered/i.test(message))
+    return "Email này đã được đăng ký. Vui lòng đăng nhập hoặc chọn Quên mật khẩu.";
   if (/rate limit|too many requests/i.test(message))
     return "Bạn thao tác quá nhanh. Vui lòng đợi một lát rồi thử lại.";
+  if (/coupon is unavailable for this order|invalid coupon preview input/i.test(message))
+    return "Mã giảm giá không hợp lệ, đã hết hạn hoặc chưa đạt giá trị đơn hàng tối thiểu.";
+  if (/checkout total changed/i.test(message))
+    return "Tổng tiền đơn hàng đã thay đổi. Vui lòng kiểm tra lại giá và mã giảm giá rồi thử lại.";
+  if (/insufficient stock/i.test(message))
+    return "Một hoặc nhiều sản phẩm trong giỏ hàng đã hết hoặc không đủ số lượng tồn kho.";
+  if (/one or more variants are unavailable/i.test(message))
+    return "Một hoặc nhiều sản phẩm trong giỏ hàng hiện không còn kinh doanh.";
   return message;
 }
 

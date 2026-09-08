@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { AuthProvider } from "@/lib/auth-context";
 import { Toaster } from "sonner";
 import { CartProvider } from "@/lib/cart-context";
+import { ConfirmProvider } from "@/components/confirm-dialog";
 
 function NotFoundComponent() {
   return (
@@ -131,8 +132,10 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CartProvider>
-          <Outlet />
-          <Toaster richColors />
+          <ConfirmProvider>
+            <Outlet />
+            <Toaster richColors />
+          </ConfirmProvider>
         </CartProvider>
       </AuthProvider>
     </QueryClientProvider>

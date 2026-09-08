@@ -19,7 +19,7 @@ type AuthState = {
   isAdmin: boolean;
   error: string;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
+  refreshProfile: (overrideUser?: User | null) => Promise<void>;
 };
 const AuthContext = createContext<AuthState | null>(null);
 
@@ -109,9 +109,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [loadProfile, queryClient]);
 
-  const refreshProfile = useCallback(async () => {
-    await loadProfile(user, profileSnapshot.current?.role === "admin");
-  }, [loadProfile, user]);
+  const refreshProfile = useCallback(
+    async (overrideUser?: User | null) => {
+      if (!supabase) return;
+      let targetUser = overrideUser;
+      if (targetUser === undefined) {
+        const { data } = await supabase.auth.getSession();
+        targetUser = data.session?.user ?? null;
+      }
+      await loadProfile(targetUser, true);
+    },
+    [loadProfile],
+  );
 
   useEffect(() => {
     if (!supabase || !user) return;

@@ -4,6 +4,7 @@ import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/shop-feedback";
 import { formatPrice, useCart } from "@/lib/cart-context";
+import { useConfirm } from "@/components/confirm-dialog";
 export const Route = createFileRoute("/cart")({
   head: () => ({ meta: [{ title: "Giỏ hàng — Apex Velocity" }] }),
   component: CartPage,
@@ -11,6 +12,7 @@ export const Route = createFileRoute("/cart")({
 function CartPage() {
   const { items, totalPrice, totalCount, isReady, updateQuantity, removeItem, clearCart } =
     useCart();
+  const confirm = useConfirm();
   const shipping = totalPrice >= 1500000 || !items.length ? 0 : 30000;
   return (
     <>
@@ -104,8 +106,17 @@ function CartPage() {
               ))}
               <Button
                 variant="outline"
-                onClick={() => {
-                  if (window.confirm("Xóa toàn bộ sản phẩm trong giỏ?")) clearCart();
+                onClick={async () => {
+                  if (
+                    await confirm({
+                      title: "Xóa giỏ hàng",
+                      description: "Bạn có chắc muốn xóa toàn bộ sản phẩm trong giỏ hàng?",
+                      confirmText: "Xóa toàn bộ",
+                      cancelText: "Giữ lại",
+                      variant: "destructive",
+                    })
+                  )
+                    clearCart();
                 }}
               >
                 Xóa giỏ hàng

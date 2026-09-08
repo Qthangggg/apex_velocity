@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth-context";
 import { formatPrice, useCart } from "@/lib/cart-context";
-import { emptyAddress, getAddresses, placeOrder } from "@/lib/shop-api";
+import { emptyAddress, errorMessage, getAddresses, placeOrder } from "@/lib/shop-api";
+import { useConfirm } from "@/components/confirm-dialog";
 import { requireSupabase } from "@/lib/supabase";
 import type { CheckoutInput, PaymentMethod, ShopProduct, Variant } from "@/lib/shop-types";
 export const Route = createFileRoute("/checkout")({
@@ -47,6 +48,7 @@ function CheckoutPage() {
 }
 function CheckoutForm() {
   const { user, profile } = useAuth();
+  const confirm = useConfirm();
   const currentUserId = user!.id;
   const { items, isReady, clearCart } = useCart();
   const queryClient = useQueryClient();
@@ -63,6 +65,7 @@ function CheckoutForm() {
     subtotal: number;
   } | null>(null);
   const [couponBusy, setCouponBusy] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -184,6 +187,7 @@ function CheckoutForm() {
   async function applyCoupon() {
     setCouponBusy(true);
     setError(null);
+    setCouponError(null);
     setApplied(null);
     try {
       const { data, error: failure } = await requireSupabase().rpc("preview_coupon", {
@@ -193,7 +197,7 @@ function CheckoutForm() {
       if (failure) throw failure;
       setApplied({ code: coupon.trim().toUpperCase(), discount: Number(data), subtotal });
     } catch (failure) {
-      setError(failure);
+      setCouponError(errorMessage(failure));
     } finally {
       setCouponBusy(false);
     }
@@ -328,11 +332,15 @@ function CheckoutForm() {
             type="button"
             variant="ghost"
             disabled={busy}
-            onClick={() => {
+            onClick={async () => {
               if (
-                !window.confirm(
-                  "Chỉ bỏ yêu cầu sau khi đã kiểm tra lịch sử đơn hoặc xác nhận với cửa hàng. Thao tác này KHÔNG hủy đơn đã được tạo; đặt lại có thể tạo đơn thứ hai. Bạn xác nhận muốn bỏ mã yêu cầu đang lưu?",
-                )
+                !(await confirm({
+                  title: "Bỏ mã yêu cầu đang lưu",
+                  description:
+                    "Chỉ bỏ yêu cầu sau khi đã kiểm tra lịch sử đơn hoặc xác nhận với cửa hàng. Thao tác này KHÔNG hủy đơn đã được tạo; đặt lại có thể tạo đơn thứ hai. Bạn xác nhận muốn bỏ mã yêu cầu đang lưu?",
+                  confirmText: "Xác nhận bỏ",
+                  variant: "destructive",
+                }))
               )
                 return;
               try {
@@ -494,6 +502,7 @@ function CheckoutForm() {
               onChange={(event) => {
                 setCoupon(event.target.value.toUpperCase());
                 setApplied(null);
+                setCouponError(null);
               }}
               maxLength={64}
               disabled={busy}
@@ -507,6 +516,11 @@ function CheckoutForm() {
               {couponBusy ? "…" : "Áp dụng"}
             </Button>
           </div>
+          {couponError && (
+            <p role="alert" className="mt-2 text-xs text-destructive">
+              {couponError}
+            </p>
+          )}
           {applied && discount > 0 && (
             <p role="status" className="mt-2 text-xs text-primary">
               Đã áp dụng: −{formatPrice(discount)}

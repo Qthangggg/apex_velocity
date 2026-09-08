@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useIsMutating } from "@tanstack/react-query";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ArrowLeft, LogOut, ShieldCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
+import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/confirm-dialog";
 import { AdminDashboard } from "@/components/admin/dashboard";
 import { AdminProducts } from "@/components/admin/products";
 import { AdminCategories } from "@/components/admin/categories";
@@ -98,9 +100,11 @@ function AdminPage() {
 }
 
 function AdminWorkspace() {
+  const confirm = useConfirm();
   const [tab, setTab] = useState<AdminTab>("dashboard");
+  const [signingOut, setSigningOut] = useState(false);
   const mutations = useIsMutating();
-  const { profile } = useAuth();
+  const { profile, signOut } = useAuth();
   return (
     <main className="mx-auto max-w-[1440px] px-4 py-8 sm:px-8 sm:py-12">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
@@ -112,9 +116,38 @@ function AdminWorkspace() {
             Quản trị cửa hàng
           </h1>
         </div>
-        <p className="max-w-sm break-words text-sm text-muted-foreground">
-          Xin chào, {profile?.full_name || "quản trị viên"}
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="max-w-sm break-words text-sm text-muted-foreground">
+            Xin chào, <span className="font-semibold text-foreground">{profile?.full_name || "quản trị viên"}</span>
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={signingOut}
+            onClick={async () => {
+              const ok = await confirm({
+                title: "Đăng xuất",
+                description: "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản quản trị?",
+                confirmText: "Đăng xuất",
+                cancelText: "Hủy",
+                variant: "destructive",
+              });
+              if (!ok) return;
+              setSigningOut(true);
+              try {
+                await signOut();
+                window.location.href = "/login";
+              } catch {
+                setSigningOut(false);
+              }
+            }}
+            className="flex items-center gap-1.5 text-xs font-semibold"
+          >
+            <LogOut size={14} />
+            Đăng xuất
+          </Button>
+        </div>
       </div>
       <nav aria-label="Chức năng quản trị" className="mb-8 flex flex-wrap gap-1 border-b pb-3">
         {tabs.map(([value, label]) => (
@@ -123,7 +156,7 @@ function AdminWorkspace() {
             type="button"
             disabled={mutations > 0}
             aria-current={tab === value ? "page" : undefined}
-            onClick={() => {
+            onClick={async () => {
               if (
                 tab !== value &&
                 (tab === "products" ||
@@ -131,7 +164,12 @@ function AdminWorkspace() {
                   tab === "coupons" ||
                   tab === "orders" ||
                   tab === "customers") &&
-                !window.confirm("Chuyển mục? Những thay đổi chưa bấm lưu sẽ bị bỏ qua.")
+                !(await confirm({
+                  title: "Chuyển mục",
+                  description: "Những thay đổi chưa bấm lưu sẽ bị bỏ qua. Bạn có chắc muốn chuyển mục?",
+                  confirmText: "Chuyển mục",
+                  cancelText: "Ở lại",
+                }))
               )
                 return;
               setTab(value);

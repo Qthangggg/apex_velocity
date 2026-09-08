@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/confirm-dialog";
 import { requireSupabase } from "@/lib/supabase";
 import type { Category } from "@/lib/shop-types";
 import {
@@ -21,6 +22,7 @@ import { readSlug, requiredText, useAdminIdentity, useAdminMutation } from "./ad
 
 export function AdminCategories() {
   const identity = useAdminIdentity();
+  const confirm = useConfirm();
   const [page, setPage] = useState(0);
   const [editor, setEditor] = useState<Category | "new" | null>(null);
   const [notice, setNotice] = useState("");
@@ -152,8 +154,15 @@ export function AdminCategories() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  if (window.confirm("Bỏ các thay đổi danh mục chưa lưu?")) {
+                onClick={async () => {
+                  if (
+                    await confirm({
+                      title: "Hủy chỉnh sửa",
+                      description: "Bỏ các thay đổi danh mục chưa lưu?",
+                      confirmText: "Bỏ thay đổi",
+                      cancelText: "Tiếp tục sửa",
+                    })
+                  ) {
                     setEditor(null);
                     save.reset();
                   }
@@ -207,13 +216,17 @@ export function AdminCategories() {
                         size="sm"
                         variant="destructive"
                         disabled={busy || !!editor}
-                        onClick={() => {
+                        onClick={async () => {
                           if (
-                            window.confirm(
-                              'Xóa danh mục "' +
+                            await confirm({
+                              title: "Xóa danh mục",
+                              description:
+                                'Xóa danh mục "' +
                                 category.name +
                                 '"? Danh mục đang có sản phẩm sẽ không thể xóa; có thể ẩn thay thế.',
-                            )
+                              confirmText: "Xóa danh mục",
+                              variant: "destructive",
+                            })
                           ) {
                             save.reset();
                             setNotice("");

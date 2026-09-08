@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/confirm-dialog";
 import { requireSupabase } from "@/lib/supabase";
 import { formatPrice } from "@/lib/cart-context";
 import type { Order, OrderStatus } from "@/lib/shop-types";
@@ -31,6 +32,7 @@ const nextStatus: Partial<Record<OrderStatus, OrderStatus>> = {
 };
 
 export function AdminOrders() {
+  const confirm = useConfirm();
   const identity = useAdminIdentity();
   const [page, setPage] = useState(0);
   const [filter, setFilter] = useState("all");
@@ -134,14 +136,24 @@ export function AdminOrders() {
           key={selected.id + selected.status + selected.payment_status}
           order={selected}
           busy={busy}
-          onClose={() => {
-            if (window.confirm("Đóng chi tiết đơn? Thay đổi trạng thái chưa lưu sẽ bị bỏ qua."))
+          onClose={async () => {
+            if (
+              await confirm({
+                title: "Đóng chi tiết",
+                description: "Đóng chi tiết đơn? Thay đổi trạng thái chưa lưu sẽ bị bỏ qua.",
+                confirmText: "Đóng",
+                cancelText: "Ở lại",
+                variant: "outline",
+              })
+            )
               setSelectedId(null);
           }}
-          onSave={(status, paymentStatus) => {
+          onSave={async (status, paymentStatus) => {
             if (
-              window.confirm(
-                "Cập nhật đơn " +
+              await confirm({
+                title: "Cập nhật đơn hàng",
+                description:
+                  "Cập nhật đơn " +
                   selected.id.slice(0, 8) +
                   " thành “" +
                   orderStatusLabels[status] +
@@ -151,20 +163,28 @@ export function AdminOrders() {
                   (paymentStatus === "paid" && selected.payment_status !== "paid"
                     ? " Chỉ xác nhận khi đã thực sự nhận đủ tiền. Thao tác ghi nhận thanh toán không thể đảo ngược."
                     : ""),
-              )
+                confirmText: "Cập nhật",
+                cancelText: "Hủy",
+                variant: "sport",
+              })
             ) {
               cancel.reset();
               setNotice("");
               update.mutate({ order: selected, status, paymentStatus });
             }
           }}
-          onCancel={() => {
+          onCancel={async () => {
             if (
-              window.confirm(
-                "Hủy đơn " +
+              await confirm({
+                title: "Hủy đơn hàng",
+                description:
+                  "Hủy đơn " +
                   selected.id.slice(0, 8) +
                   " và hoàn lại tồn kho? Thao tác không thể hoàn tác. Không xóa lịch sử đơn hàng.",
-              )
+                confirmText: "Hủy đơn",
+                cancelText: "Không hủy",
+                variant: "destructive",
+              })
             ) {
               update.reset();
               setNotice("");

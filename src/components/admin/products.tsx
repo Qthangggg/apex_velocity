@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useIsMutating, useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/confirm-dialog";
 import { requireSupabase } from "@/lib/supabase";
 import { formatPrice } from "@/lib/cart-context";
 import type { Category, ShopProduct } from "@/lib/shop-types";
@@ -29,6 +30,7 @@ import {
 } from "./admin-data";
 
 export function AdminProducts() {
+  const confirm = useConfirm();
   const identity = useAdminIdentity();
   const [page, setPage] = useState(0);
   const [filter, setFilter] = useState("all");
@@ -61,11 +63,15 @@ export function AdminProducts() {
       if (!deleted.error)
         return "Đã xóa sản phẩm. Ảnh trong kho lưu trữ không bị xóa để bảo toàn liên kết lịch sử.";
       if (deleted.error.code !== "23503") throw deleted.error;
-      if (
-        !window.confirm(
+      const shouldArchive = await confirm({
+        title: "Lưu trữ sản phẩm?",
+        description:
           "Không thể xóa sản phẩm khi còn biến thể hoặc dữ liệu liên quan, kể cả chưa có đơn hàng. Để xóa vĩnh viễn, hãy xóa từng biến thể chưa liên kết với đơn hàng trước rồi thử lại; biến thể có lịch sử đơn hàng không thể xóa. Bạn muốn lưu trữ bằng cách ẩn sản phẩm thay thế? Lịch sử và tồn kho sẽ được giữ nguyên.",
-        )
-      )
+        confirmText: "Ẩn & lưu trữ",
+        cancelText: "Hủy bỏ",
+        variant: "destructive",
+      });
+      if (!shouldArchive)
         return "Chưa xóa hoặc lưu trữ sản phẩm. Mở Sửa để xóa từng biến thể chưa có lịch sử đơn hàng rồi thử xóa sản phẩm lại, hoặc tắt trạng thái hoạt động để lưu trữ.";
       const archived = await client
         .from("products")
@@ -89,8 +95,16 @@ export function AdminProducts() {
         <ProductEditor
           key={editor === "new" ? "new" : editor.id}
           product={editor === "new" ? null : editor}
-          onClose={() => {
-            if (window.confirm("Đóng trình chỉnh sửa? Thay đổi chưa lưu sẽ bị bỏ qua."))
+          onClose={async () => {
+            if (
+              await confirm({
+                title: "Đóng trình chỉnh sửa",
+                description: "Đóng trình chỉnh sửa? Thay đổi chưa lưu sẽ bị bỏ qua.",
+                confirmText: "Đóng",
+                cancelText: "Ở lại",
+                variant: "outline",
+              })
+            )
               setEditor(null);
           }}
           onSaved={(product) => {
@@ -201,13 +215,18 @@ export function AdminProducts() {
                         variant="destructive"
                         size="sm"
                         disabled={remove.isPending}
-                        onClick={() => {
+                        onClick={async () => {
                           if (
-                            window.confirm(
-                              'Xóa sản phẩm "' +
+                            await confirm({
+                              title: "Xóa sản phẩm",
+                              description:
+                                'Xóa sản phẩm "' +
                                 product.name +
                                 '"? Sản phẩm còn biến thể hoặc dữ liệu liên quan sẽ không thể xóa, kể cả chưa có đơn hàng. Bạn sẽ được chọn lưu trữ thay thế.',
-                            )
+                              confirmText: "Xóa sản phẩm",
+                              cancelText: "Hủy",
+                              variant: "destructive",
+                            })
                           ) {
                             setNotice("");
                             remove.mutate(product);
