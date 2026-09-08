@@ -17,7 +17,8 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         sport: "rounded-none bg-primary text-primary-foreground shadow-none hover:bg-primary/88",
-        sportOutline: "rounded-none border border-primary-foreground/70 bg-transparent text-primary-foreground shadow-none hover:bg-primary-foreground hover:text-foreground",
+        sportOutline:
+          "rounded-none border border-primary-foreground/70 bg-transparent text-primary-foreground shadow-none hover:bg-primary-foreground hover:text-foreground",
       },
       size: {
         default: "h-9 px-4 py-2",

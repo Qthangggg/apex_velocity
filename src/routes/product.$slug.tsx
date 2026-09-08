@@ -1,199 +1,211 @@
-import { createFileRoute, notFound, Link } from "@tanstack/react-router";
-import { Check, ShoppingBag, Truck } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-
+import { Check, ShoppingBag, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
-import { getProduct, products } from "@/lib/products";
-import { useCart } from "@/lib/cart-context";
-
+import { Failure, Loading, SetupNotice } from "@/components/shop-feedback";
+import { useProduct } from "@/lib/shop-api";
+import { isConfigured } from "@/lib/supabase";
+import { formatPrice, useCart } from "@/lib/cart-context";
+import type { ShopProduct } from "@/lib/shop-types";
 export const Route = createFileRoute("/product/$slug")({
-  loader: ({ params }) => {
-    const product = getProduct(params.slug);
-    if (!product) throw notFound();
-    return { product };
-  },
-  head: ({ loaderData }) => {
-    if (!loaderData) {
-      return { meta: [{ title: "Không tìm thấy sản phẩm — Apex Velocity" }, { name: "robots", content: "noindex" }] };
-    }
-    const { name, tagline, description } = loaderData.product;
-    const title = `${name} — Apex Velocity`;
-    return {
-      meta: [
-        { title },
-        { name: "description", content: description.slice(0, 155) },
-        { property: "og:title", content: `${name} · ${tagline}` },
-        { property: "og:description", content: description.slice(0, 155) },
-        { property: "og:type", content: "product" },
-        { name: "twitter:card", content: "summary_large_image" },
-      ],
-    };
-  },
+  head: () => ({ meta: [{ title: "Chi tiết sản phẩm — Apex Velocity" }] }),
   component: ProductPage,
 });
-
 function ProductPage() {
-  const { product } = Route.useLoaderData();
-  const { addItem } = useCart();
-  const [activeImage, setActiveImage] = useState(0);
-  const [size, setSize] = useState(product.sizes[0]!);
-  const [color, setColor] = useState(product.colors[0]!.name);
-  const [quantity, setQuantity] = useState(1);
-  const [added, setAdded] = useState(false);
-
-  const others = products.filter((item) => item.slug !== product.slug);
-
+  const { slug } = Route.useParams();
+  const product = useProduct(slug);
   return (
-    <div className="bg-background">
+    <>
       <SiteHeader />
-      <main className="mx-auto max-w-[1540px] px-5 py-8 sm:px-8 sm:py-12">
-        <nav aria-label="Đường dẫn" className="text-xs tracking-[0.14em] text-muted-foreground">
-          <Link to="/" className="hover:text-primary">TRANG CHỦ</Link> <span className="px-2">/</span>
-          <span className="text-foreground">{product.name.toUpperCase()}</span>
-        </nav>
-
-        <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-14">
-          <div>
-            <div className="relative aspect-square overflow-hidden bg-product">
-              <img
-                src={product.images[activeImage]!.src}
-                alt={product.images[activeImage]!.alt}
-                width={1200}
-                height={1200}
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-              <span className="absolute left-4 top-4 bg-primary px-3 py-1.5 text-[11px] font-bold tracking-[0.15em] text-primary-foreground">
-                {product.tagline}
-              </span>
-            </div>
-            {product.images.length > 1 && (
-              <div className="mt-4 flex gap-4">
-                {product.images.map((image, index) => (
-                  <button
-                    key={image.src}
-                    type="button"
-                    onClick={() => setActiveImage(index)}
-                    aria-label={`Xem ảnh ${index + 1}`}
-                    aria-pressed={index === activeImage}
-                    className={`relative h-20 w-20 overflow-hidden border sm:h-24 sm:w-24 ${index === activeImage ? "border-primary" : "border-border"}`}
-                  >
-                    <img src={image.src} alt={image.alt} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
+      <main className="mx-auto min-h-[65vh] max-w-[1540px] px-5 py-10 sm:px-8">
+        {!isConfigured ? (
+          <SetupNotice />
+        ) : product.isLoading ? (
+          <Loading />
+        ) : product.error ? (
+          <Failure error={product.error} retry={() => void product.refetch()} />
+        ) : product.data ? (
+          <ProductDetail key={product.data.id} product={product.data} />
+        ) : (
+          <div className="py-20 text-center">
+            <h1 className="text-2xl font-bold">Sản phẩm không tồn tại hoặc đã ngừng bán</h1>
+            <Link to="/shop" className="mt-5 inline-block text-primary underline">
+              Khám phá bộ sưu tập
+            </Link>
           </div>
-
-          <div>
-            <h1 className="font-display text-4xl font-black italic sm:text-5xl">{product.name.toUpperCase()}</h1>
-            <p className="mt-4 text-2xl font-semibold">{product.price}</p>
-            <p className="mt-5 leading-7 text-muted-foreground">{product.description}</p>
-
-            <div className="mt-9">
-              <p className="text-xs font-bold tracking-[0.16em]">MÀU SẮC</p>
-              <div className="mt-3 flex flex-wrap gap-3">
-                {product.colors.map((option) => (
-                  <button
-                    key={option.name}
-                    type="button"
-                    onClick={() => { setColor(option.name); setAdded(false); }}
-                    aria-pressed={color === option.name}
-                    className={`flex items-center gap-2 border px-3 py-2 text-sm ${color === option.name ? "border-primary text-primary" : "border-border"}`}
-                  >
-                    <span className="h-4 w-4 border border-border" style={{ background: option.swatch }} />
-                    {option.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-7">
-              <p className="text-xs font-bold tracking-[0.16em]">KÍCH CỠ</p>
-              <div className="mt-3 flex flex-wrap gap-3">
-                {product.sizes.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => { setSize(option); setAdded(false); }}
-                    aria-pressed={size === option}
-                    className={`h-11 min-w-11 border px-3 text-sm font-semibold ${size === option ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-7">
-              <p className="text-xs font-bold tracking-[0.16em]">SỐ LƯỢNG</p>
-              <div className="mt-3 flex h-12 w-fit items-center border border-border">
-                <button type="button" className="h-full w-12 text-lg" aria-label="Giảm số lượng" onClick={() => setQuantity((value) => Math.max(1, value - 1))}>−</button>
-                <span aria-live="polite" className="w-12 text-center font-semibold">{quantity}</span>
-                <button type="button" className="h-full w-12 text-lg" aria-label="Tăng số lượng" onClick={() => setQuantity((value) => Math.min(9, value + 1))}>+</button>
-              </div>
-            </div>
-
-            <div className="mt-9 flex flex-wrap gap-3">
-              <Button
-                variant="sport"
-                size="xl"
-                onClick={() => {
-                  addItem({
-                    slug: product.slug,
-                    name: product.name,
-                    price: product.price,
-                    image: product.images[0]!.src,
-                    color,
-                    size,
-                    quantity,
-                  });
-                  setAdded(true);
-                }}
-              >
-                <ShoppingBag /> THÊM VÀO GIỎ HÀNG
-              </Button>
-              <Button variant="sportOutline" size="xl" type="button">MUA NGAY</Button>
-            </div>
-            {added && (
-              <p role="status" className="mt-4 flex items-center gap-2 text-sm text-primary">
-                <Check size={16} /> Đã thêm {quantity} × {product.name} ({color} · {size}) vào giỏ hàng.
-                <Link to="/cart" className="underline hover:text-primary/80">Xem giỏ hàng</Link>
-              </p>
-            )}
-
-            <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-              <Truck size={16} /> Miễn phí giao hàng cho đơn từ 1.500.000₫ · Đổi trả trong 30 ngày
-            </p>
-
-            <div className="mt-9 border-t border-border pt-7">
-              <p className="text-xs font-bold tracking-[0.16em]">ĐIỂM NỔI BẬT</p>
-              <ul className="mt-4 space-y-3 text-muted-foreground">
-                {product.highlights.map((item) => (
-                  <li key={item} className="flex gap-3"><Check size={18} className="mt-0.5 shrink-0 text-primary" />{item}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <section className="mt-16 sm:mt-24" aria-label="Sản phẩm khác">
-          <h2 className="font-display text-3xl font-black italic sm:text-4xl">SẢN PHẨM KHÁC</h2>
-          <div className="mt-4 h-1 w-20 bg-primary" />
-          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {others.map((item) => (
-              <Link key={item.slug} to="/product/$slug" params={{ slug: item.slug }} className="group">
-                <div className="relative aspect-square overflow-hidden bg-product">
-                  <img src={item.images[0]!.src} alt={item.images[0]!.alt} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
-                </div>
-                <h3 className="mt-4 font-semibold">{item.name}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{item.price}</p>
-              </Link>
-            ))}
-          </div>
-        </section>
+        )}
       </main>
       <SiteFooter />
-    </div>
+    </>
+  );
+}
+function ProductDetail({ product }: { product: ShopProduct }) {
+  const variants = product.product_variants.filter((variant) => variant.is_active);
+  const [variantId, setVariantId] = useState(
+    variants.find((variant) => variant.stock > 0)?.id || variants[0]?.id || "",
+  );
+  const [image, setImage] = useState(product.images[0] || "/images/category-running.jpg");
+  const [quantity, setQuantity] = useState(1);
+  const [added, setAdded] = useState(false);
+  const variant = variants.find((item) => item.id === variantId);
+  const { addItem, items, isReady } = useCart();
+  const navigate = useNavigate();
+  const existing = items.find((item) => item.variantId === variantId)?.quantity ?? 0;
+  const available = variant ? Math.max(0, Math.min(99, variant.stock) - existing) : 0;
+  const canAdd =
+    isReady && !!variant && quantity <= available && (existing > 0 || items.length < 50);
+  function add(buyNow: boolean) {
+    if (!canAdd || !variant) return;
+    addItem(product, variant, quantity);
+    setAdded(true);
+    if (buyNow) void navigate({ to: "/checkout" });
+  }
+  return (
+    <>
+      <nav
+        className="mb-8 flex flex-wrap gap-2 text-xs text-muted-foreground"
+        aria-label="Đường dẫn"
+      >
+        <Link to="/">TRANG CHỦ</Link>
+        <span>/</span>
+        <Link to="/shop">BỘ SƯU TẬP</Link>
+        <span>/</span>
+        <span>{product.name}</span>
+      </nav>
+      <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+        <div>
+          <div className="aspect-square overflow-hidden bg-product">
+            <img src={image} alt={product.name} className="h-full w-full object-cover" />
+          </div>
+          <div className="mt-4 flex flex-wrap gap-3">
+            {product.images.map((source, index) => (
+              <button
+                key={source + index}
+                type="button"
+                aria-label={"Xem ảnh " + (index + 1)}
+                aria-pressed={image === source}
+                onClick={() => setImage(source)}
+                className={
+                  "h-20 w-20 overflow-hidden border-2 " +
+                  (image === source ? "border-primary" : "border-transparent")
+                }
+              >
+                <img
+                  src={source}
+                  alt={product.name + " — ảnh " + (index + 1)}
+                  className="h-full w-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="text-xs font-bold tracking-[0.2em] text-primary">
+            {product.tagline || product.categories?.name}
+          </p>
+          <h1 className="mt-4 font-display text-4xl font-black italic sm:text-5xl">
+            {product.name}
+          </h1>
+          <p className="mt-5 text-2xl font-semibold">
+            {formatPrice(product.price)}{" "}
+            {product.compare_at_price && product.compare_at_price > product.price ? (
+              <del className="ml-3 text-base text-muted-foreground">
+                {formatPrice(product.compare_at_price)}
+              </del>
+            ) : null}
+          </p>
+          <p className="mt-6 whitespace-pre-line leading-7 text-muted-foreground">
+            {product.description}
+          </p>
+          <label htmlFor="variant" className="mb-3 mt-8 block text-xs font-bold tracking-widest">
+            MÀU SẮC / KÍCH THƯỚC
+          </label>
+          <select
+            id="variant"
+            className="h-12 w-full border border-input bg-background px-3"
+            value={variantId}
+            onChange={(event) => {
+              setVariantId(event.target.value);
+              setQuantity(1);
+              setAdded(false);
+            }}
+          >
+            {variants.map((item) => (
+              <option key={item.id} value={item.id} disabled={item.stock === 0}>
+                {item.color} / {item.size}
+                {item.stock === 0 ? " — Hết hàng" : " — Còn " + item.stock}
+              </option>
+            ))}
+          </select>
+          {variants.length === 0 && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Sản phẩm hiện chưa có biến thể bán hàng.
+            </p>
+          )}
+          <label htmlFor="quantity" className="mb-3 mt-6 block text-xs font-bold tracking-widest">
+            SỐ LƯỢNG
+          </label>
+          <input
+            id="quantity"
+            type="number"
+            className="h-12 w-24 border border-input bg-background px-3"
+            min={1}
+            max={Math.max(1, available)}
+            value={quantity}
+            onChange={(event) => {
+              const value = Number(event.target.value);
+              if (Number.isInteger(value)) setQuantity(Math.max(1, Math.min(99, value)));
+            }}
+          />
+          {existing > 0 && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Đã có {existing} sản phẩm cùng biến thể trong giỏ.
+            </p>
+          )}
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button variant="sport" size="xl" disabled={!canAdd} onClick={() => add(false)}>
+              <ShoppingBag />
+              THÊM VÀO GIỎ
+            </Button>
+            <Button variant="outline" size="xl" disabled={!canAdd} onClick={() => add(true)}>
+              MUA NGAY
+            </Button>
+          </div>
+          {!canAdd && isReady && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              {items.length >= 50 && !existing
+                ? "Giỏ hàng đã đạt giới hạn 50 sản phẩm."
+                : available === 0
+                  ? "Hết hàng hoặc đã đạt số lượng tối đa trong giỏ."
+                  : "Số lượng vượt quá tồn kho hiện tại."}
+            </p>
+          )}
+          {added && (
+            <p role="status" className="mt-4 flex items-center gap-2 text-sm text-primary">
+              <Check size={16} /> Đã thêm vào giỏ.{" "}
+              <Link to="/cart" className="underline">
+                Xem giỏ hàng
+              </Link>
+            </p>
+          )}
+          <p className="mt-6 flex gap-2 text-sm text-muted-foreground">
+            <Truck size={18} />
+            Miễn phí giao hàng từ 1.500.000₫; đơn khác 30.000₫.
+          </p>
+          <div className="mt-8 border-t border-border pt-6">
+            <h2 className="text-xs font-bold tracking-widest">ĐIỂM NỔI BẬT</h2>
+            <ul className="mt-4 space-y-3">
+              {product.highlights.map((highlight, index) => (
+                <li key={index} className="flex gap-3 text-muted-foreground">
+                  <Check size={18} className="shrink-0 text-primary" />
+                  {highlight}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

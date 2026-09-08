@@ -1,0 +1,107 @@
+export type Role = "user" | "admin";
+export type OrderStatus = "pending" | "confirmed" | "shipping" | "completed" | "cancelled";
+export type PaymentMethod = "cod" | "bank_transfer";
+export type Profile = {
+  id: string;
+  full_name: string;
+  phone: string;
+  role: Role;
+  is_active: boolean;
+  created_at: string;
+};
+export type Category = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  is_active: boolean;
+  created_at: string;
+};
+export type Variant = {
+  id: string;
+  product_id: string;
+  size: string;
+  color: string;
+  swatch: string;
+  sku: string;
+  stock: number;
+  is_active: boolean;
+};
+export type ShopProduct = {
+  id: string;
+  category_id: string | null;
+  slug: string;
+  name: string;
+  price: number;
+  compare_at_price: number | null;
+  tagline: string;
+  description: string;
+  highlights: string[];
+  images: string[];
+  is_active: boolean;
+  featured: boolean;
+  created_at: string;
+  categories?: Category | null;
+  product_variants: Variant[];
+};
+export type Address = {
+  id: string;
+  user_id: string;
+  recipient: string;
+  phone: string;
+  line1: string;
+  ward: string;
+  district: string;
+  city: string;
+  created_at: string;
+};
+export type Coupon = {
+  id: string;
+  code: string;
+  discount_type: "percent" | "fixed";
+  amount: number;
+  min_order: number;
+  max_uses: number | null;
+  used_count: number;
+  expires_at: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+export type OrderItem = {
+  id: string;
+  order_id: string;
+  variant_id: string;
+  product_name: string;
+  image: string;
+  size: string;
+  color: string;
+  unit_price: number;
+  quantity: number;
+};
+export type Order = {
+  id: string;
+  user_id: string;
+  request_id: string;
+  status: OrderStatus;
+  payment_method: PaymentMethod;
+  payment_status: "unpaid" | "paid";
+  subtotal: number;
+  discount: number;
+  shipping_fee: number;
+  total: number;
+  coupon_code: string | null;
+  shipping_address: Omit<Address, "id" | "user_id" | "created_at">;
+  note: string;
+  created_at: string;
+  order_items: OrderItem[];
+};
+export type Subscription = { id: string; email: string; created_at: string };
+export type CheckoutInput = {
+  p_items: { variant_id: string; quantity: number }[];
+  p_address: Omit<Address, "id" | "user_id" | "created_at">;
+  p_payment_method: PaymentMethod;
+  p_coupon_code: string;
+  p_note: string;
+  p_request_id: string;
+  p_expected_total: number;
+};
