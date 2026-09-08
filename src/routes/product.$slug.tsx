@@ -37,7 +37,7 @@ function ProductPage() {
   const { product } = Route.useLoaderData();
   const { addItem } = useCart();
   const [activeImage, setActiveImage] = useState(0);
-  const [size, setSize] = useState(product.sizes[0]);
+  const [size, setSize] = useState(product.sizes[0]!);
   const [color, setColor] = useState(product.colors[0]!.name);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
