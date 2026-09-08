@@ -36,7 +36,7 @@ function ProductPage() {
   const { product } = Route.useLoaderData();
   const [activeImage, setActiveImage] = useState(0);
   const [size, setSize] = useState(product.sizes[0]);
-  const [color, setColor] = useState(product.colors[0].name);
+  const [color, setColor] = useState(product.colors[0]!.name);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
@@ -55,8 +55,8 @@ function ProductPage() {
           <div>
             <div className="relative aspect-square overflow-hidden bg-product">
               <img
-                src={product.images[activeImage].src}
-                alt={product.images[activeImage].alt}
+                src={product.images[activeImage]!.src}
+                alt={product.images[activeImage]!.alt}
                 width={1200}
                 height={1200}
                 className="absolute inset-0 h-full w-full object-cover"
@@ -166,7 +166,7 @@ function ProductPage() {
             {others.map((item) => (
               <Link key={item.slug} to="/product/$slug" params={{ slug: item.slug }} className="group">
                 <div className="relative aspect-square overflow-hidden bg-product">
-                  <img src={item.images[0].src} alt={item.images[0].alt} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
+                  <img src={item.images[0]!.src} alt={item.images[0]!.alt} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
                 </div>
                 <h3 className="mt-4 font-semibold">{item.name}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{item.price}</p>
