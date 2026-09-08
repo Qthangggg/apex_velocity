@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { getProduct, products } from "@/lib/products";
+import { useCart } from "@/lib/cart-context";
 
 export const Route = createFileRoute("/product/$slug")({
   loader: ({ params }) => {
@@ -34,8 +35,9 @@ export const Route = createFileRoute("/product/$slug")({
 
 function ProductPage() {
   const { product } = Route.useLoaderData();
+  const { addItem } = useCart();
   const [activeImage, setActiveImage] = useState(0);
-  const [size, setSize] = useState(product.sizes[0]);
+  const [size, setSize] = useState(product.sizes[0]!);
   const [color, setColor] = useState(product.colors[0]!.name);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
@@ -133,7 +135,22 @@ function ProductPage() {
             </div>
 
             <div className="mt-9 flex flex-wrap gap-3">
-              <Button variant="sport" size="xl" onClick={() => setAdded(true)}>
+              <Button
+                variant="sport"
+                size="xl"
+                onClick={() => {
+                  addItem({
+                    slug: product.slug,
+                    name: product.name,
+                    price: product.price,
+                    image: product.images[0]!.src,
+                    color,
+                    size,
+                    quantity,
+                  });
+                  setAdded(true);
+                }}
+              >
                 <ShoppingBag /> THÊM VÀO GIỎ HÀNG
               </Button>
               <Button variant="sportOutline" size="xl" type="button">MUA NGAY</Button>
@@ -141,6 +158,7 @@ function ProductPage() {
             {added && (
               <p role="status" className="mt-4 flex items-center gap-2 text-sm text-primary">
                 <Check size={16} /> Đã thêm {quantity} × {product.name} ({color} · {size}) vào giỏ hàng.
+                <Link to="/cart" className="underline hover:text-primary/80">Xem giỏ hàng</Link>
               </p>
             )}
 
