@@ -3,11 +3,13 @@ import { Instagram, Menu, Search, ShoppingBag, UserRound, X } from "lucide-react
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useCart } from "@/lib/cart-context";
 
 const navItems = ["NEW ARRIVALS", "TRAINING", "FOOTWEAR", "SALE"];
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const { totalCount } = useCart();
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
@@ -26,7 +28,16 @@ export function SiteHeader() {
           <Button variant="ghost" asChild className="hidden px-2 sm:inline-flex">
             <Link to="/login"><UserRound /> ĐĂNG NHẬP</Link>
           </Button>
-          <Button variant="ghost" size="icon" aria-label="Giỏ hàng" title="Giỏ hàng"><ShoppingBag /></Button>
+          <Button variant="ghost" size="icon" asChild className="relative" aria-label="Giỏ hàng" title="Giỏ hàng">
+            <Link to="/cart">
+              <ShoppingBag />
+              {totalCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                  {totalCount > 9 ? "9+" : totalCount}
+                </span>
+              )}
+            </Link>
+          </Button>
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setOpen((value) => !value)} aria-label="Mở menu">
             {open ? <X /> : <Menu />}
           </Button>
@@ -38,6 +49,9 @@ export function SiteHeader() {
             <Link to="/" onClick={() => setOpen(false)}>HOME</Link>
             {navItems.map((item) => <a key={item} href={`#${item.toLowerCase().replace(" ", "-")}`} onClick={() => setOpen(false)}>{item}</a>)}
             <Link to="/login" onClick={() => setOpen(false)}>ĐĂNG NHẬP</Link>
+            <Link to="/cart" onClick={() => setOpen(false)} className="flex items-center gap-2">
+              <ShoppingBag size={16} /> GIỎ HÀNG {totalCount > 0 && <span className="ml-1 bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">{totalCount > 9 ? "9+" : totalCount}</span>}
+            </Link>
           </div>
         </nav>
       )}
