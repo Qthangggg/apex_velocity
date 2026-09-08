@@ -69,7 +69,7 @@ function HomePage() {
           <SectionTitle title="NEW ARRIVALS" action="XEM TẤT CẢ" />
           <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-10 lg:grid-cols-4 lg:gap-6">
             {products.map((product, index) => (
-              <article key={product.name} className="group">
+              <Link key={product.name} to="/product/$slug" params={{ slug: product.slug }} className="group block">
                 <div className="relative aspect-square overflow-hidden bg-product">
                   <img src={productsImage} alt={product.name} width={1400} height={1400} loading="lazy" className="absolute h-[200%] w-[200%] max-w-none object-cover transition-transform duration-500 group-hover:scale-[2.05]" style={{ objectPosition: product.position, left: index % 2 ? "-100%" : "0", top: index > 1 ? "-100%" : "0" }} />
                   <span className="absolute left-3 top-3 bg-primary px-3 py-1.5 text-[11px] font-bold tracking-[0.15em] text-primary-foreground">MỚI</span>
