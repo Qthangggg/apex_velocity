@@ -32,10 +32,10 @@ const categories = [
 ];
 
 const products = [
-  { name: "Velocity Runner X1", price: "2.890.000₫", position: "0% 0%" },
-  { name: "Apex Training Shorts", price: "1.190.000₫", position: "100% 0%" },
-  { name: "Core Performance Tee", price: "890.000₫", position: "0% 100%" },
-  { name: "Pulse Pro Watch", price: "3.490.000₫", position: "100% 100%" },
+  { name: "Velocity Runner X1", price: "2.890.000₫", position: "0% 0%", slug: "velocity-runner-x1" },
+  { name: "Velocity Tracksuit", price: "2.490.000₫", position: "100% 0%", slug: "velocity-tracksuit" },
+  { name: "Endurance Pack", price: "1.890.000₫", position: "0% 100%", slug: "endurance-pack" },
+  { name: "Pulse Pro Watch", price: "3.490.000₫", position: "100% 100%", slug: "velocity-runner-x1" },
 ];
 
 function HomePage() {
